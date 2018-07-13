@@ -18,4 +18,25 @@
 
 */
 
-/* include directives */
+/* main include directives */
+#include <fcntl.h> /* open() */
+#include <unistd.h> /* close() read() getopt() */
+#include <sys/statvfs.h> /* fstatvfs() */
+#include <getopt.h> /* optarg */
+
+/* user debugging and I/O */
+#include <stdio.h>
+
+/* macros and macro functions */
+#define err(stat)\
+if(stat == -1) exit(1);
+
+int main(int argc, char** argv)
+{
+	char* dev_path = "/dev/sdb1";
+
+	int devfd = open(dev_path, O_RDONLY);
+		err(devfd);
+
+	return 0;
+}
