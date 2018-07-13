@@ -1,0 +1,4 @@
+Files are written with motive to develop for the Linux Kernel.
+Platform chosen to develop on is Arch Linux: linux-lts. Developemnt
+is focused heavily on kernel modules and the free space within
+the Linux Kernel.
