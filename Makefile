@@ -1,7 +1,7 @@
 MAIN=ffblock
 BIN=ffb
 
-all: clean exe
+all: exe
 
 exe:
 	gcc -o $(BIN) $(MAIN).c
@@ -11,3 +11,5 @@ clean:
 
 run:
 	sudo ./$(BIN)
+
+re: clean exe run
