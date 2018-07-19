@@ -51,6 +51,16 @@ static union raw_data
 	uint8_t buf[32];
 } buffer;
 
+struct fat_fs
+{
+	uint8_t	sector_cl;	 	/* sectors per cluster */
+	uint16_t sector_sz;	 	/* sector size */
+	uint32_t root_cl;		/* start of root cluster */
+	int fsinfo_d
+	int fat_d;
+	int data_d;
+};
+
 /* function to read raw data from block device */
 ssize_t data_read(int bd, union raw_data* rdb, size_t bytes, off_t whence);
 
@@ -67,10 +77,6 @@ int main(int argc, char** argv)
 	/* boot sector of fat32  partition */
 	struct fat_boot_sector* fat_sb;
 
-	data_read(devfd, &buffer, 2, 0x0b);
-	uint16_t sector_size = buffer.lb;
-	printf("sector size: %d\n", sector_size);
-
 	/* now read whole block */
 	int stat = lseek(devfd, 0, SEEK_SET);
 		err(stat);
@@ -82,12 +88,6 @@ int main(int argc, char** argv)
 
 	fat_sb = (struct fat_boot_sector*) sector;
 
-//	memcpy(&buffer, fat_sb.sector_size, 2);
-
-	printf("read %d bytes\n", bytes);
-	printf("fat boot sector size: %d\n\n", 
-		READ_SHORT(fat_sb->sector_size));
-	
 	printf("Closing %s ...\n", dev_path);
 	stat = close(devfd);
 		err(stat);
