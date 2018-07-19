@@ -60,8 +60,8 @@ struct fat32_sb
 };
 
 static struct fat32_fs {
-	struct fat32_sb sb32;
-	int fatd, datad;
+	struct fat32_sb sb32; /* superblock */
+	int fatd, datad;	  /* fd for fat and data */
 } fatfs;
 
 /* function to read raw data from block device */
@@ -105,41 +105,11 @@ int main(int argc, char** argv)
 
 	printf("\n");
 
-
-	/* sector size */
-	data_read(devfd, &buffer, 2, 0x0b);
-	printf("Sector Size: %d\n", buffer.sb);
-
-	/* sectors per cluster (block) */
-	data_read(devfd, &buffer, 1, 0x0d);
-	printf("Sectors per Cluster: %d\n", buffer.b);
-
-	/* reserved sectors */
-	data_read(devfd, &buffer, 2, 0x0e);
-	printf("Reserved Sectors: %d\n", buffer.sb);
-
-	/* number of FAT */
-	data_read(devfd, &buffer, 1, 0x10);
-	printf("Number of FAT: %d\n", buffer.b);
-
-	/* sectors per FAT */
-	data_read(devfd, &buffer, 2, 0x24);
-	printf("Sectors per FAT: %d\n", buffer.sb);
-
-	/* total sectors per disk */
-	data_read(devfd, &buffer, 4, 0x20);
-	printf("Sectors per Disk: %d\n", buffer.lb);
-
-	/* rood directory first cluster */
-	data_read(devfd, &buffer, 4, 0x2C);
-	printf("Root Dir first Cluster: %d\n", buffer.lb);
-
-	/* fsinfo sector offset */
-	data_read(devfd, &buffer, 2, 0x030);
-	printf("FS Info Sector: %d\n", buffer.sb);
+	/* get basic file system info */
+	get_fat32_fs(devfd, &fatfs);
 
 	/* moving onto FS info sector */
-	uint16_t fsi_offs = buffer.sb * 512;
+	uint16_t fsi_offs = fatfs.sb32.fsinfo_sec * 512;
 
 	/* volume ID */
 	stat = data_read(devfd, &buffer, 8, 0x52);
@@ -180,12 +150,65 @@ ssize_t data_read(int bd, union raw_data* rdb, size_t bytes, off_t whence)
 
 void get_super_block(int bd, struct fat32_sb* sb)
 {
+	/* sector size */
+	data_read(bd, &buffer, 2, 0x0b);
+	sb->sector_sz = buffer.sb;
+	printf("Sector Size: %d\n", buffer.sb);
 	
+	/* sectors per cluster (block) */
+	data_read(bd, &buffer, 1, 0x0d);
+	sb->sector_cl = buffer.b;
+	printf("Sectors per Cluster: %d\n", buffer.b);
+
+	/* reserved sectors */
+	data_read(bd, &buffer, 2, 0x0e);
+	sb->sector_res = buffer.sb;
+	printf("Reserved Sectors: %d\n", buffer.sb);
+
+	/* number of FAT */
+	data_read(bd, &buffer, 1, 0x10);
+	sb->nfat = buffer.b;
+	printf("Number of FAT: %d\n", buffer.b);
+
+	/* sectors per FAT */
+	data_read(bd, &buffer, 2, 0x24);
+	sb->sector_fat = buffer.sb;
+	printf("Sectors per FAT: %d\n", buffer.sb);
+
+	/* total sectors per disk */
+	data_read(bd, &buffer, 4, 0x20);
+	sb->nsectors = buffer.lb;
+	printf("Sectors per Disk: %d\n", buffer.lb);
+
+	/* rood directory first cluster */
+	data_read(bd, &buffer, 4, 0x2C);
+	sb->root_cl = buffer.lb;
+	printf("Root Dir first Cluster: %d\n", buffer.lb);
+
+	/* fsinfo sector offset */
+	data_read(bd, &buffer, 2, 0x030);
+	sb->fsinfo_sec = buffer.sb;
+	printf("FS Info Sector: %d\n", buffer.sb);	
 }
 
 void get_fat32_fs(int bd, struct fat32_fs* fs)
 {
+	/* get superblock info from boot sector */
+	get_super_block(bd, &fs->sb32);
 
+	/* copy reference */
+	fs->fatd = dup(bd);
+	fs->datad = dup(bd);
+
+	/* set approproate offsets */
+	off_t fat_off = fs->sb32.sector_res * fs->sb32.sector_sz;
+	off_t data_off = fat_off + (fs->sb32.nfat * fs->sb32.sector_fat * fs->sb32.sector_sz);
+	
+	int stat = lseek(fs->fatd, fat_off, SEEK_SET);
+		err(stat);
+
+	stat = lseek(fs->datad, data_off, SEEK_SET);
+		err(stat);
 }
 
 void print_vfs(struct statvfs vfs)
