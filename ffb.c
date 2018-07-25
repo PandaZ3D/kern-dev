@@ -44,6 +44,7 @@ if(stat == -1) {perror("filesystem:"); exit(1);}
 
 #define READ_SHORT(s)	(s[1] << 8 | s[0])
 #define READ_LONG(l)	((l[3] << 32 | l[2] << 16 | (READ_SHORT(l)))
+
 /* structures or unions */
 static union raw_data 
 {
@@ -81,63 +82,90 @@ int main(int argc, char** argv)
 
 	printf("\n");
 
-	/* boot sector of fat32  partition */
-	struct fat_boot_sector* fat_sb;
-
-	/* fat fs object */
-	struct fat_fs fat32;
-
-	/* now read boot sector */
-	int stat = lseek(devfd, 0, SEEK_SET);
-		err(stat);
-
+	/* read first logical sector */
 	uint8_t sector[SECTOR_SIZE];
 
 	int bytes = read(devfd, sector, SECTOR_SIZE);
 		err(bytes);
 
+	/* boot sector of fat32  partition */
+	struct fat_boot_sector* fat_sb;
 	fat_sb = (struct fat_boot_sector*) sector;
 
-	/* initialize fat_fs object from boot */
-	fat32.sector_sz = READ_SHORT(fat_sb->sector_size);
-	fat32.sector_cl = fat_sb->sec_per_clus;
-	fat32.root_cl = fat_sb->fat32.root_cluster;
+	/* descriptor to fat */
+	int fat_d = dup(devfd);
+	
+	/* calculate total number of clusters (blocks) in fat */
+	uint8_t sector_per_cluster = fat_sb->sec_per_clus;
+	uint16_t sector_size = READ_SHORT(fat_sb->sector_size);
+	uint32_t total_clusters = fat_sb->total_sect / sector_per_cluster;
+	uint32_t valid_clusters = total_clusters - (fat_sb->reserved 
+		+ fat_sb->fat32.length * fat_sb->fats) / sector_per_cluster + 1;
 
-	/* descriptors to device partitions */
-	fat32.fsinfo_d = dup(devfd);
-	fat32.fat_d = dup(devfd);
-	fat32.data_d = dup(devfd);
+	/* fat byte offset */
+	off_t fat_off =  sector_size * fat_sb->reserved;
 
-	/* fsinfo offset */
-	off_t part_off = fat_sb->fat32.info_sector * fat32.sector_sz;
-
-	stat = lseek(fat32.fsinfo_d, part_off, SEEK_SET);
-		err(stat);
-
-	/* fat offset */
-	part_off = fat32.sector_sz * fat_sb->reserved;
-
-	stat = lseek(fat32.fat_d, part_off, SEEK_SET);
+	int stat = lseek(fat_d, fat_off, SEEK_SET);
 		err(stat);	
 
-	uint32_t i, p = 0, f = 0;
-	uint32_t total_ent = (fat_sb->fat32.length * fat32.sector_sz) / 4;
-	printf("total_ent: %d\n", total_ent);
 
-	for(i = FAT_START_ENT; i<total_ent; i++)
+/////////////////////////////////////////////////////////////
+
+	/* current, first free, and last free index */
+	/* current and previous entry values */
+	uint32_t curr_clus = FAT_ENT_FREE, *FAT;
+	uint32_t c, p = FAT_ENT_EOF, f, l, bi;
+
+	/* scan fat for free blocks marking start and end */
+	do
 	{
-		bytes = read(fat32.fat_d, &buffer, 4);
+		/* read a sector of data */
+		bytes = read(fat_d, sector, sector_size);
 			err(bytes);
-		if(buffer.lb == FAT_ENT_FREE)
+		
+		/* set buffer index */
+		bi = 0;
+		FAT = (uint32_t*) sector;
+		do
 		{
-			f++;
-		}
-		if((p % 64) == 63)
-			printf("\n");
+			/* get entry from fat */
+			c = FAT[bi];
+		
+			/* check for in condition case */
+			if(p == FAT_ENT_EOF && c == FAT_ENT_FREE)
+				f = curr_clus;
+
+			/* check for out condition case */
+			if(p == FAT_ENT_FREE && c == FAT_ENT_EOF)
+			{
+				l = curr_clus - 1;
+			
+				/* now print since both are set */
+				if(f == l)
+					printf("%d\n", f);
+				else
+					printf("%d %#d\n", f, l);
+			}
+
+			/* assign previous value */
+			p = c;
+		} while(bi++ < sector_size && curr_clus++ < valid_clusters);
+	} while(curr_clus++ < valid_clusters);
+
+
+	/* edge case for last index being free */
+	if(f > l)
+	{
+		/* now print since both are set */
+		if(f == valid_clusters - 1)
+			printf("%#d\n", f);
+		else
+			printf("%#d %#d\n", f, valid_clusters - 1);
 	}
 
-	printf("total free: %d\n", f);
+/////////////////////////////////////////////////////////////
 
+	printf("\n");
 	printf("Closing %s ...\n", dev_path);
 	stat = close(devfd);
 		err(stat);
