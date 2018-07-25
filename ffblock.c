@@ -7,18 +7,6 @@
  * 		 free space block in a block device.
  */
 
-/* brain storm main functions needed to perform task */
-/*
-	flags for modularity (getopt)
-		-p path to device
-		-f filesystem type
-		-m mount path
-	open()
-	stat() --> for a block device
-		look specifically at vfat
-
-*/
-
 /* main include directives */
 #include <fcntl.h> /* open() */
 #include <unistd.h> /* close() read() getopt() */
@@ -28,14 +16,22 @@
 #include <getopt.h> /* optarg */
 
 /* user debugging and I/O */
-#include <stdio.h>
+#include <stdio.h>	/* perror() printf() */
 #include <stdlib.h> /* exit() */
 #include <string.h>
+#include <ctype.h>	/* isprint() */
 #include <errno.h>
+
+
+/* kernel includes */
+#include <linux/msdos_fs.h>
 
 /* macros and macro functions */
 #define err(stat)\
 if(stat == -1) {perror("filesystem:"); exit(1);}
+
+#define READ_SHORT(s)	(s[1] << 8 | s[0])
+#define READ_LONG(l)	((l[3] << 32 | l[2] << 16 | (READ_SHORT(l)))
 
 /* structures or unions */
 static union raw_data 
@@ -46,93 +42,101 @@ static union raw_data
 	uint8_t buf[32];
 } buffer;
 
-struct fat32_sb
-{
-	uint8_t nfat;		 	/* number of fat (1 or 2) */
-	uint8_t	sector_cl;	 	/* sectors per cluster */
-	uint8_t fsinfo_sec;	 	/* sector number of fsinfo */
-	uint16_t sector_sz;	 	/* sector size */
-	uint16_t sector_res; 	/* sectors reserved */
-	uint16_t sector_fat;	/* sectors per fat */
-	uint32_t nsectors;		/* sectors on disk */
-	uint32_t root_cl;		/* start of root cluster */
-	uint8_t volume_id[8];	/* name of fat sys */
-};
-
-static struct fat32_fs {
-	struct fat32_sb sb32; /* superblock */
-	int fatd, datad;	  /* fd for fat and data */
-} fatfs;
-
 /* function to read raw data from block device */
 ssize_t data_read(int bd, union raw_data* rdb, size_t bytes, off_t whence);
-void get_super_block(int bd, struct fat32_sb* sb);
-void get_fat32_fs(int bd, struct fat32_fs* fs);
-void print_vfs(struct statvfs vfs);
-void print_fs(struct statfs fs);
+/* function to dump raw data like hexdump */
+void dump(uint8_t* buf, int len);
 
 int main(int argc, char** argv)
 {
 	char* dev_path = "/dev/sdb1";
-	char* mount_path = "/home/zed/Desktop/vfat";
-
-	printf("Opening %s ...\n", mount_path);
-	int devfd = open(mount_path, O_RDONLY);
+	
+	/* open device */
+	int devfd = open(dev_path, O_RDONLY);
 		err(devfd);
+	
+	/* read first logical sector */
+	uint8_t sector[SECTOR_SIZE];
 
-	/* vfs attr */
-	struct statvfs vfs;
-	int stat = fstatvfs(devfd, &vfs);
-		err(stat);
+	int bytes = read(devfd, sector, SECTOR_SIZE);
+		err(bytes);
 
-	//print_vfs(vfs);
-	//printf("\n");
+	/* boot sector of fat32  partition */
+	struct fat_boot_sector* fat_sb;
+	fat_sb = (struct fat_boot_sector*) sector;
 
-	/* fs attr */
-	struct statfs fs;
-	stat = fstatfs(devfd, &fs);
-		err(stat);
-	//print_fs(fs);
-	//printf("\n");
+	/* calculate total number of clusters (blocks) in fat */
+	uint8_t sector_per_cluster = fat_sb->sec_per_clus;
+	uint32_t disk_clusters = fat_sb->total_sect / sector_per_cluster;
+	uint32_t last_cluster = disk_clusters - (fat_sb->reserved 
+		+ fat_sb->fat32.length * fat_sb->fats) / sector_per_cluster + 1;
 
-	printf("Closing %s ...\n", mount_path);
+	/* fat byte offset */
+	off_t fat_off =  SECTOR_SIZE * fat_sb->reserved;
+
+	/* descriptor to fat */
+	int stat = lseek(devfd, fat_off, SEEK_SET);
+		err(stat);	
+
+
+	/* pointer to fat */
+	uint32_t *FAT;
+	
+	/* cluster, first free, last free index */
+	uint32_t curr_clus = 0, first_free, last_free;
+	/* current and previous entry values and index */
+	uint32_t c, p = FAT_ENT_EOF, entry;
+
+	/* scan fat for free blocks marking start and end */
+	do
+	{
+		/* read a sector of data */
+		bytes = read(devfd, sector, SECTOR_SIZE);
+			err(bytes);
+		
+		/* set buffer index */
+		entry = 0;
+		FAT = (uint32_t*) sector;
+		do
+		{
+			/* get entry from fat */
+			c = FAT[entry];
+		
+			/* check for in condition case */
+			if(p == FAT_ENT_EOF && c == FAT_ENT_FREE)
+				first_free = curr_clus;
+
+			/* check for out condition case */
+			if(p == FAT_ENT_FREE && c == FAT_ENT_EOF)
+			{
+				last_free = curr_clus - 1;
+			
+				/* now print since both are set */
+				if(first_free == last_free)
+					printf("%d\n", first_free);
+				else
+					printf("%d %d\n", first_free, last_free);
+			}
+
+			/* assign previous value */
+			p = c;
+		} while(entry++ < SECTOR_SIZE && curr_clus++ < last_cluster);
+	} while(curr_clus++ < last_cluster);
+
+
+	/* edge case for last index being free */
+	if(first_free > last_free)
+	{
+		/* now print since both are set */
+		if(first_free == last_cluster - 1)
+			printf("%d\n", first_free);
+		else
+			printf("%d %d\n", first_free, last_cluster - 1);
+	}
+
+	/* close device */
 	stat = close(devfd);
 		err(stat);
-
-	printf("Opening %s ...\n", dev_path);
-	devfd = open(dev_path, O_RDONLY);
-		err(devfd);
-
-	printf("\n");
-
-	/* get basic file system info */
-	get_fat32_fs(devfd, &fatfs);
-
-	/* moving onto FS info sector */
-	uint16_t fsi_offs = fatfs.sb32.fsinfo_sec * 512;
-
-	/* volume ID */
-	stat = data_read(devfd, &buffer, 8, 0x52);
-	buffer.buf[stat] = 0;
-	printf("Volume ID: %s\n", buffer.buf);
-
-	printf("\n");
-
-	/* last free cluster */
-	data_read(devfd, &buffer, 4, fsi_offs + 0x1E8);
-	printf("Number of free Clusters: %d\n", buffer.lb);	
-
-	/* free cluster location */
-	data_read(devfd, &buffer, 4, fsi_offs + 0x1EC);
-	printf("Last Allocated Cluster: %d\n", buffer.lb);	
-
-	printf("\n");
-
-	printf("Closing %s ...\n", dev_path);
-	stat = close(devfd);
-		err(stat);
-
-	printf("(END)\n");
 
 	return 0;
 }
@@ -148,96 +152,25 @@ ssize_t data_read(int bd, union raw_data* rdb, size_t bytes, off_t whence)
 	return bytes_read;
 }
 
-void get_super_block(int bd, struct fat32_sb* sb)
+/* dumps raw memory similar to hexdump */
+void dump(uint8_t* buf, int len)
 {
-	/* sector size */
-	data_read(bd, &buffer, 2, 0x0b);
-	sb->sector_sz = buffer.sb;
-	printf("Sector Size: %d\n", buffer.sb);
-	
-	/* sectors per cluster (block) */
-	data_read(bd, &buffer, 1, 0x0d);
-	sb->sector_cl = buffer.b;
-	printf("Sectors per Cluster: %d\n", buffer.b);
+	uint8_t b;
+	int i, j;
 
-	/* reserved sectors */
-	data_read(bd, &buffer, 2, 0x0e);
-	sb->sector_res = buffer.sb;
-	printf("Reserved Sectors: %d\n", buffer.sb);
+	for(i = 0; i < len; i++)
+	{
+		b = buf[i];
+		printf("%02x ", b);
 
-	/* number of FAT */
-	data_read(bd, &buffer, 1, 0x10);
-	sb->nfat = buffer.b;
-	printf("Number of FAT: %d\n", buffer.b);
-
-	/* sectors per FAT */
-	data_read(bd, &buffer, 2, 0x24);
-	sb->sector_fat = buffer.sb;
-	printf("Sectors per FAT: %d\n", buffer.sb);
-
-	/* total sectors per disk */
-	data_read(bd, &buffer, 4, 0x20);
-	sb->nsectors = buffer.lb;
-	printf("Sectors per Disk: %d\n", buffer.lb);
-
-	/* rood directory first cluster */
-	data_read(bd, &buffer, 4, 0x2C);
-	sb->root_cl = buffer.lb;
-	printf("Root Dir first Cluster: %d\n", buffer.lb);
-
-	/* fsinfo sector offset */
-	data_read(bd, &buffer, 2, 0x030);
-	sb->fsinfo_sec = buffer.sb;
-	printf("FS Info Sector: %d\n", buffer.sb);	
-}
-
-void get_fat32_fs(int bd, struct fat32_fs* fs)
-{
-	/* get superblock info from boot sector */
-	get_super_block(bd, &fs->sb32);
-
-	/* copy reference */
-	fs->fatd = dup(bd);
-	fs->datad = dup(bd);
-
-	/* set approproate offsets */
-	off_t fat_off = fs->sb32.sector_res * fs->sb32.sector_sz;
-	off_t data_off = fat_off + (fs->sb32.nfat * fs->sb32.sector_fat * fs->sb32.sector_sz);
-	
-	int stat = lseek(fs->fatd, fat_off, SEEK_SET);
-		err(stat);
-
-	stat = lseek(fs->datad, data_off, SEEK_SET);
-		err(stat);
-}
-
-void print_vfs(struct statvfs vfs)
-{
-	printf("Filesystem Attributes (statvfs):\n");
-	printf("\tf_bsize = %ld\n", vfs.f_bsize);
-	printf("\tf_frsize = %ld\n", vfs.f_frsize);
-	printf("\tf_blocks = %ld\n", vfs.f_blocks);
-	printf("\tf_bfree = %ld\n", vfs.f_bfree);
-	printf("\tf_bavail = %ld\n", vfs.f_bavail);
-	printf("\tf_files = %ld\n", vfs.f_files);
-	printf("\tf_ffree = %ld\n", vfs.f_ffree);
-	printf("\tf_favail = %ld\n", vfs.f_favail);
-	printf("\tf_fsid = %#x\n", vfs.f_fsid);
-	printf("\tf_flag = %#x\n", vfs.f_flag);
-	printf("\tf_namemax = %#x\n", vfs.f_namemax);
-}
-void print_fs(struct statfs fs)
-{
-	printf("Filesystem Attributes (statfs):\n");
-	printf("\tf_type = %#08x\n", fs.f_type);
-	printf("\tf_bsize = %ld\n", fs.f_bsize);
-	printf("\tf_frsize = %ld\n", fs.f_frsize);
-	printf("\tf_blocks = %ld\n", fs.f_blocks);
-	printf("\tf_bfree = %ld\n", fs.f_bfree);
-	printf("\tf_bavail = %ld\n", fs.f_bavail);
-	printf("\tf_files = %ld\n", fs.f_files);
-	printf("\tf_ffree = %ld\n", fs.f_ffree);
-	printf("\tf_fsid = %#x\n", fs.f_fsid);
-	printf("\tf_flags = %#x\n", fs.f_flags);
-	printf("\tf_namelength = %#x\n", fs.f_namelen);
+		if(((i % 16) == 15) | (i == (len - 1)))
+		{
+			printf("|");
+			for(j = i - 15; j < i; j++)
+			{
+				printf("%c", (isprint(buf[j]))? buf[j] : '.');
+			}
+			printf("|\n");
+		}
+	}
 }
