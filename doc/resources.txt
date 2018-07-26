@@ -1,0 +1,81 @@
+--> kernel module
+=====================================
+The Linux Kernel Module Programming Guide (2005)
+	https://www.iitg.ac.in/asahu/cs421/books/LKM2.6.pdf
+
+Writing a Simple Linux Kernel Module
+	https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234
+
+How to write to a file from a kernel module
+	http://krishnamohanlinux.blogspot.com/2013/12/how-to-write-to-file-from-kernel-module.html
+
+
+--> procfs
+======================================
+write a kernel module, which create a read/write proc file
+	https://gist.github.com/BrotherJing/c9c5ffdc9954d998d1336711fa3a6480
+
+Read and Write a /proc File
+	https://linux.die.net/lkmpg/x769.html
+
+Access the Linux kernel using the /proc filesystem
+	https://www.ibm.com/developerworks/library/l-proc/index.html
+
+Exploring /proc File System in Linux
+	https://www.tecmint.com/exploring-proc-file-system-in-linux/
+
+Discover the possibilities of the /proc directory
+	https://www.linux.com/news/discover-possibilities-proc-directory
+
+--> vfs
+=======================================
+Overview of the Linux Virtual File System
+	https://www.kernel.org/doc/Documentation/filesystems/vfs.txt
+
+A tour of the Linux VFS
+	https://www.tldp.org/LDP/khg/HyperNews/get/fs/vfstour.html
+
+VFS, proc and root filesystems
+	https://harrys.fyi/2015/03/31/vfs-proc-and-root-filesystems/
+
+LINUX KERNEL DEVELOPMENT - CREATING A PROC FILE AND INTERFACING WITH USER SPACE
+	http://devarea.com/linux-kernel-development-creating-a-proc-file-and-interfacing-with-user-space/
+
+--> erasure coding
+========================================
+Replication and Erasure Coding Explained
+	https://www.caringo.com/wp-content/themes/bootstrap/downloads/whitepapers/caringo_whitepaper_replication_and_erasure_coding.pdf
+
+--> search queries
+========================================
+working with vfs free space blocks linux kernel
+use a kernel module to write to a file
+kernel module that interacts with /proc
+
+--> misc sources
+========================================
+coreutils source tree
+	https://github.com/coreutils/coreutils/tree/master/src
+
+Driving Me Nuts - Things You Never Should Do in the Kernel
+	https://www.linuxjournal.com/article/8110
+
+sysfs
+	https://superuser.com/questions/794198/directory-sys-in-linux
+	https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt
+
+linux drivers
+	https://sysplay.github.io/books/LinuxDrivers/book/Content/Part18.html
+
+module examples
+	http://www.cs.fsu.edu/~cop4610t/assignments.html
+
+--> key files for fat32 block allocation 
+===========================================
+file.c
+	fat_fallocate():230
+fatent.c
+	fat_alloc_clusters():462
+	fat_count_free_clusters():649
+
+	
