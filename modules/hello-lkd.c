@@ -4,6 +4,8 @@
  *
  * hello-lkd.c - Hello World Kernel Module
  * Linux Kernel Development - Robert Love
+ *
+ * Module taints kernel on build
  */
  
  /* standard headers for kernel modules */
