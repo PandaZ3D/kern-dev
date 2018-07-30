@@ -70,6 +70,10 @@ linux drivers
 module examples
 	http://www.cs.fsu.edu/~cop4610t/assignments.html
 
+fat fs spec
+	https://technet.microsoft.com/en-us/library/cc750354.aspx
+	https://stackoverflow.com/questions/11928982/what-is-the-difference-between-vfat-and-fat32-file-systems
+
 --> key files for fat32 block allocation 
 ===========================================
 file.c
