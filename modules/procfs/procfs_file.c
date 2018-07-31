@@ -11,14 +11,15 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
-#include <linux/uaccess.h>
+#include <linux/uaccess.h> /* user data transfer */
+#include <linux/cred.h>
 
 /* struct proc definition */
 #include <internal.h>
 
 
 #define NAME 	"newfile"	/* file name */
-#define PERM 	0644 		/* file permissions */
+#define PERM 	0444 		/* file permissions */
 #define PARENT 	NULL
 
 /* procfs file to be implemented */
@@ -84,10 +85,10 @@ static int
 proc_file_perm(struct inode *inode, int op)
 {
 	/* make file read only */
-	if(op == 4)
+	if((op & MAY_READ) /*&& (__kuid_val(current_cred()->uid) == 0)*/)
 		return 0;
 
-	return 0;
+	return -EACCES;
 }
 
 /* file operations for proc file */
@@ -122,7 +123,7 @@ static int proc_file_init(void)
 		new_proc_file->mode = S_IFREG | S_IRUGO | S_IWUSR;
 		new_proc_file->uid = KUIDT_INIT(0);
 		new_proc_file->gid = KGIDT_INIT(0);
-		new_proc_file->size = 420;
+		new_proc_file->size = 0;
 		
 		return 0;
 	}
