@@ -1,0 +1,1 @@
+cmd_/home/zed/Desktop/kern-dev/modules/sysfs/sysfs_file.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/zed/Desktop/kern-dev/modules/sysfs/sysfs_file.ko /home/zed/Desktop/kern-dev/modules/sysfs/sysfs_file.o /home/zed/Desktop/kern-dev/modules/sysfs/sysfs_file.mod.o ;  true
