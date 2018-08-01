@@ -1,7 +1,9 @@
 KDIR=/boot/kern-dev/linux-4.14.53/
 MOD=fs_free
+SRC=sys_fs_free
 
 obj-m 	  := $(MOD).o
+$(MOD)-y  := $(SRC).o
 
 # ccflags-y := -Ifs/sysfs
 
