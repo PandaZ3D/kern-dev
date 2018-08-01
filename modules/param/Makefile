@@ -5,6 +5,9 @@ obj-m += $(MOD).o
 
 ARG = "Safeway" # default
 
+# parameter format:
+# sudo insmod hello_param.ko msg="Banana" list="one,two,three,four"
+
 all:
 	sudo make -C $(KDIR) M=$(PWD)
 clean:
