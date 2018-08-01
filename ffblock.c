@@ -33,6 +33,8 @@ if(stat == -1) {perror("filesystem:"); exit(1);}
 #define READ_SHORT(s)	(s[1] << 8 | s[0])
 #define READ_LONG(l)	((l[3] << 32 | l[2] << 16 | (READ_SHORT(l)))
 
+#define USAGE			("usage: %s -p <device-path>\n")
+
 /* structures or unions */
 static union raw_data 
 {
@@ -42,15 +44,39 @@ static union raw_data
 	uint8_t buf[32];
 } buffer;
 
+
+static char* dev_path;
+
 /* function to read raw data from block device */
 ssize_t data_read(int bd, union raw_data* rdb, size_t bytes, off_t whence);
 /* function to dump raw data like hexdump */
 void dump(uint8_t* buf, int len);
 
 int main(int argc, char** argv)
-{
-	char* dev_path = "/dev/sdb1";
+{	
+	if(argc < 2)
+	{
+		fprintf(stderr, USAGE, argv[0]);
+		exit(1);
+	}
 	
+	/* get command line options */
+	int opt;
+	while((opt = getopt(argc, argv, "p:")) != -1)
+	{
+		switch(opt)
+		{
+			case 'p': /* path to block device */
+			{	dev_path = strdup(optarg);
+				break;
+			}
+			case '?':
+			default:
+				fprintf(stderr, USAGE, argv[0]);
+				exit(1);
+		}
+	}
+
 	/* open device */
 	int devfd = open(dev_path, O_RDONLY);
 		err(devfd);

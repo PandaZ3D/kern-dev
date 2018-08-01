@@ -9,7 +9,4 @@ exe:
 clean:
 	rm -f $(BIN)
 
-run:
-	sudo ./$(BIN)
-
-re: clean exe run
+re: clean exe
