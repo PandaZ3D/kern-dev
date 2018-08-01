@@ -1,8 +1,8 @@
 /* 
  * Allen Aboytes 
- * 7/26/2018
+ * 8/1/2018
  *
- * sysfs_file.c - creates a directory and file in /sys
+ * sysfs_file.c - creates a file under /sys/fs/free
  *
  */
  
@@ -11,6 +11,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/sysfs.h>
+#include <linux/fs.h> /* fs_kobj */
 
 #define NAME 		"newfile"	/* file name */
 #define PERM 		0444 		/* file permissions */
@@ -58,23 +59,24 @@ static int newfile_init(void)
 	int ret = 0;
 	
 	/* create new kobject for use in sysfs (a new directory) */
-	new_kobj = kobject_create_and_add("newfolder", PARENT);
+	//new_kobj = kobject_create_and_add("newfolder", PARENT);
 	
 	/* not enough memory to allocate */
-	if(new_kobj == NULL)
-	{
-		printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
-		return -ENOMEM;
-	}
+	//if(new_kobj == NULL)
+	//{
+	//	printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
+	//	return -ENOMEM;
+	//}
 
 	/* try to create new sysfs entry (file) */
-	ret = sysfs_create_file(new_kobj, &kobj_attr_newfile.attr);
+	//ret = sysfs_create_file(fs_kobj, &kobj_attr_newfile.attr);
 
 	/* log error message */
-	if(ret)
-		printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
-
-	return ret;
+	//if(ret)
+		//printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
+	sysfs_remove_file(fs_kobj, &kobj_attr_newfile.attr);
+	
+	return 0;
 }
 
 /* 
@@ -83,7 +85,8 @@ static int newfile_init(void)
 static void newfile_exit(void)
 {
 	/* remove instance of kernel object */
-	kobject_put(new_kobj);
+	//kobject_put(new_kobj);
+	//sysfs_remove_file(fs_kobj, &kobj_attr_newfile.attr);
 }
  
 /* register module start and end functions */
