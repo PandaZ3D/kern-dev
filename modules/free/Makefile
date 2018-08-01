@@ -1,5 +1,5 @@
 KDIR=/boot/kern-dev/linux-4.14.53/
-MOD=sysfs_file
+MOD=fs_free
 
 obj-m 	  := $(MOD).o
 
