@@ -58,7 +58,7 @@ static int newfile_init(void)
 	int ret = 0;
 	
 	/* create new kobject for use in sysfs */
-	new_kobj = kobject_create_and_add(NAME, PARENT);
+	new_kobj = kobject_create_and_add("newfolder", PARENT);
 	
 	/* not enough memory to allocate */
 	if(new_kobj == NULL)
