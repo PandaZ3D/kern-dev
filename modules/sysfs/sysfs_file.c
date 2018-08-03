@@ -72,7 +72,10 @@ static int newfile_init(void)
 
 	/* log error message */
 	if(ret)
+	{
+		kobject_put(new_kobj);
 		printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
+	}
 
 	return ret;
 }

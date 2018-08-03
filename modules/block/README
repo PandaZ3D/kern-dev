@@ -1,0 +1,2 @@
+Module that opens up a block device and prints some information
+through the use of module prameters specifying the device

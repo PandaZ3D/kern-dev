@@ -70,8 +70,12 @@ static int free_init(void)
 
 	/* log error message */
 	if(ret)
+	{	
+		kobject_put(free_kobj);
+		kobject_put(bd_kobj);
 		printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
-	
+	}
+
 	return ret;
 }
 
