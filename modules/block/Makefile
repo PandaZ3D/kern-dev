@@ -16,9 +16,8 @@ install:
 	sudo insmod $(MOD).ko dev=${ARG}
 remove:
 	sudo rmmod $(MOD)
+check:
+	lsmod | grep $(MOD)
 
 re: clean all install remove
 	dmesg
-
-wd:
-	echo $(PWD)
