@@ -1,0 +1,3 @@
+Module that opens up a block device and reads data from the
+storage device. The device is specified through module
+parameters.
