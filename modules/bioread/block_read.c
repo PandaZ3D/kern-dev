@@ -2,7 +2,7 @@
  * Allen Aboytes 
  * 8/1/2018
  *
- * block_read.c - reads data from a device
+ * block_read.c - prints fs on device
  *
  * Externel module taints kernel
  */
@@ -14,10 +14,8 @@
 
 /* file system includes */
 #include <linux/fs.h>
-#include <linux/genhd.h>
 
-/* magic number */
-#include <linux/magic.h>
+#include "trivial.h"
 
 #define PERM	0000 /* parameter permissions */
 #define MODE 	FMODE_READ
@@ -34,8 +32,9 @@ MODULE_PARM_DESC(path, "Device path name");
 
 static int blk_init(void)
 {
-	struct hd_struct* part;
 	struct super_block* sb;
+	struct file_system_type* fst;
+	const struct super_operations* ops;
 
 	/* obtain block device reference */
 	bdev = blkdev_get_by_path(path, MODE, NULL);
@@ -43,32 +42,38 @@ static int blk_init(void)
 	if(IS_ERR_OR_NULL(bdev))
 		return PTR_ERR(bdev);
 
-	/* get partition reference */
-	part = bdev->bd_part;
-
-	if(part == NULL)
-	{
-		printk(KERN_ALERT "Unable to obtain partition.");
-		blkdev_put(bdev, MODE);
-		return 0;
-	}
-
-
-	/* perform some sort of disk io */
-	sb = bdev->bd_super;
+	/* get superblock reference */
+	sb = get_super(bdev);
 	if(sb == NULL)
 	{
-		blkdev_put(bdev, MODE);
-		return 0;
+		goto fail;
 	}
 
-	printk(KERN_INFO "Super Magic: 0x%lX : %c",
-		sb->s_magic, (sb->s_magic & MSDOS_SUPER_MAGIC)? 'y':'n');
+	ops = sb->s_op;
 
-	part = NULL;
-	sb = NULL;
+	/* obtain file system */
+	fst = get_file_system(sb->s_type);
+	if(fst == NULL)
+	{
+		goto fail;
+	}
+
+	printk(KERN_INFO "The disk file system: %s", get_fs_name(fst));
+
+	/* clean up and dec ref counts */
+	ops->put_super(sb);
+	put_file_system(fst);
 
 	return 0;
+
+fail:
+	if(sb)
+		ops->put_super(sb);
+	if(fst)
+		put_file_system(fst);
+	blkdev_put(bdev, MODE);
+	return -ENODEV;
+
 }
 
 /*  
@@ -87,4 +92,4 @@ module_exit(blk_exit)
 /* basic description of module */
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Zed");
-MODULE_DESCRIPTION("Module looks at block device");
+MODULE_DESCRIPTION("Module prints file system name");
