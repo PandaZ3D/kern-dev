@@ -3,7 +3,8 @@
  * 8/1/2018
  *
  * free_blocks.c - creates a file under /sys/fs/free
- * for a specific block device
+ * for a specific block device that lists the free
+ * blocks in the filesystem
  *
  */
  
@@ -17,8 +18,8 @@
 #include "trivial.h"
 
 #define NAME 	"free"		/* directory name */
-#define PARENT 	fs_kobj
-#define MODE 	FMODE_READ
+#define PARENT 	fs_kobj		/* kobj parent in /sys */
+#define MODE 	FMODE_READ	/* mode to open blkdev */
 #define PERM	0000 		/* parameter permissions */
 
 #define FILE_ATTR_RO(_name)\
