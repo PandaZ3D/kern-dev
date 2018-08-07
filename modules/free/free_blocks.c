@@ -115,7 +115,9 @@ static void free_exit(void)
 	sysfs_remove_file(bd_kobj, &kobj_attr_free.attr);
 
 	/* remove instance of kernel object */
-	kobject_put(free_kobj);
+	kobject_del(free_kobj);
+
+	/* decrement reference count */
 	kobject_put(bd_kobj);
 	blkdev_put(bdev, MODE);
 }
