@@ -1,6 +1,6 @@
 KDIR=/boot/kern-dev/linux-4.14.53/
 MOD=fs_free
-SRC=sys_fs_free
+SRC=free_blocks
 
 obj-m 	  := $(MOD).o
 $(MOD)-y  := $(SRC).o

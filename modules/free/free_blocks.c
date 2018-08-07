@@ -2,7 +2,7 @@
  * Allen Aboytes 
  * 8/1/2018
  *
- * sys_fs_free.c - creates a file under /sys/fs/free
+ * free_blocks.c - creates a file under /sys/fs/free
  * for a specific block device
  *
  */
