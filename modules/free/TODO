@@ -1,0 +1,13 @@
+Making free space finder module which is a file
+specifying any contiguous or single set of
+unallocated blocks.
+
+* create file 'free' under sys/fs/free/'drive'
+	* use kobj to specify name
+
+* add module parameters for all drives to be watched
+	* have a list of references to all kobj
+
+* use attr groups?
+
+* use fs name string to specify search method
