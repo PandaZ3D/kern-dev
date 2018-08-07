@@ -14,7 +14,8 @@
 #define bdev_to_part(bdev) 	(bdev->bd_part)
 #define dev_to_kobj(dev)	(&((dev)->kobj))
 
-#define get_fs_name(fs) 	(fs->name)
+#define fs_name(fs) 		(fs->name)
+#define kobj_name(kobj)		(kobj->name)
 
 /* implementation: /fs/filsystems.c */
 static inline struct file_system_type*

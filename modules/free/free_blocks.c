@@ -16,19 +16,23 @@
 
 #include "trivial.h"
 
-#define NAME 		"free"	/* directory name */
-#define PARENT 		fs_kobj
+#define NAME 	"free"		/* directory name */
+#define PARENT 	fs_kobj
 #define MODE 	FMODE_READ
+#define PERM	0000 		/* parameter permissions */
 
 #define FILE_ATTR_RO(_name)\
 	struct kobj_attribute kobj_attr_##_name = __ATTR_RO(_name)
 
-/* block device reference */
-static struct block_device* bdev;
-
-static struct kobject *free_kobj, *bd_kobj;
 static int special = 0x80085;
-static char* path = "/dev/sdb1";
+static char* path;
+
+module_param(path, charp, PERM);
+MODULE_PARM_DESC(path, "Device path name");
+
+
+static struct block_device* bdev;
+static struct kobject *free_kobj, *bd_kobj;
 
 /*
  * sysfs allocates a buffer of size (PAGE_SIZE)
@@ -71,18 +75,25 @@ static int free_init(void)
 		goto fail;
 	}
 
-	/* create new kobject under /sys/free for block device */
+	/* get kobject reference for block device */
 	bd_kobj = bdev_to_kobj(bdev);
+	if(bd_kobj == NULL)
+	{
+		ret = -ENODEV;
+		goto fail;
+	}
+
+	/* add kobject to sysfs */
+	ret = kobject_add(bd_kobj, free_kobj, "%s", kobj_name(bd_kobj));
+	if(ret)
+		goto fail;
 
 	/* try to create new sysfs entry (file) */
 	ret = sysfs_create_file(bd_kobj, &kobj_attr_free.attr);
 
 	/* log error message */
 	if(ret)
-	{	
-		printk(KERN_ALERT "Error: on creating sysfs file entry.\n");
 		goto fail;
-	}
 
 	return 0;
 
@@ -98,23 +109,22 @@ fail:
 	return ret;
 }
 
-/* 
- * 
- */
 static void free_exit(void)
 {
+	/* remove file from with kobj */
+	sysfs_remove_file(bd_kobj, &kobj_attr_free.attr);
+
 	/* remove instance of kernel object */
 	kobject_put(free_kobj);
 	kobject_put(bd_kobj);
 	blkdev_put(bdev, MODE);
-	//sysfs_remove_file(fs_kobj, &kobj_attr_newfile.attr);
 }
  
 /* register module start and end functions */
-module_init(free_init);
-module_exit(free_exit);
+module_init(free_init)
+module_exit(free_exit)
  
 /* basic description of module */
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Zed");
-MODULE_DESCRIPTION("Simple Module to create file in /sys");
+MODULE_DESCRIPTION("Finds free blocks in a filesystem");
