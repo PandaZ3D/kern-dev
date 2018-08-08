@@ -146,7 +146,7 @@ int main(int argc, char** argv)
 
 			/* assign previous value */
 			p = c;
-		} while(++entry < SECTOR_SIZE && ++curr_clus < last_cluster);
+		} while(++entry < SECTOR_SIZE/4 && ++curr_clus < last_cluster);
 	} while(++curr_clus < last_cluster);
 
 

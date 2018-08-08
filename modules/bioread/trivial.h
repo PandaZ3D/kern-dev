@@ -8,6 +8,8 @@
 #include <linux/fs.h>
 #include <linux/module.h>
 
+#include "fatfs.h"
+
 /* implementation: /fs/filsystems.c */
 static inline struct file_system_type*
 get_file_system(struct file_system_type* fs)

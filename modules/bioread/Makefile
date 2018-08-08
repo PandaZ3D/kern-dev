@@ -1,7 +1,9 @@
 KDIR=/boot/kern-dev/linux-4.14.53/
-MOD=block_read
+MOD=fat_read
 
-obj-m += $(MOD).o
+obj-m 		:= $(MOD).o
+$(MOD)-objs	:= block_read.o fatfs.o
+ccflags-y 	:= -Ifs/fat
 
 ARG = "/dev/sdb1" # default
 
