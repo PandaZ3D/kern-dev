@@ -41,6 +41,8 @@ static int blk_init(void)
 	struct super_block* sb = NULL;
 	struct file_system_type* fst = NULL;
 	const struct super_operations* ops;
+
+	int i = 0;
 	/***************************************************************/
 	/* 						  TEST CODE							   */
 	/***************************************************************/
@@ -99,18 +101,27 @@ static int blk_init(void)
 
 	fatent_init(&fatent);
 	fatent_set_entry(&fatent, FAT_START_ENT);
-	if ((cur_block & reada_mask) == 0) {
-		unsigned long rest = sbi->fat_length - cur_block;
-		fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+	
+	/* loop start */
+	while(i < 4)
+	{
+		if ((cur_block & reada_mask) == 0) {
+			unsigned long rest = sbi->fat_length - cur_block;
+			fat_ent_reada(sb, &fatent, min(reada_blocks, rest));
+		}
+		cur_block++;
+
+		err = fat_ent_read_block(sb, &fatent);
+		if (err)
+			goto out;
+		do
+		{
+			c = fops->ent_get(&fatent);
+			
+			printk(KERN_INFO "%d:%x\n", fatent.entry, c);
+		} while (i < 4);
 	}
-
-	err = fat_ent_read_block(sb, &fatent);
-	if (err)
-		goto out;
-
-	c = fops->ent_get(&fatent);
-
-	printk(KERN_INFO "%d:%x\n", fatent.entry, c);
+	/* loop end */
 
 	fatent_brelse(&fatent);
 	
