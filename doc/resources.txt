@@ -41,16 +41,24 @@ VFS, proc and root filesystems
 LINUX KERNEL DEVELOPMENT - CREATING A PROC FILE AND INTERFACING WITH USER SPACE
 	http://devarea.com/linux-kernel-development-creating-a-proc-file-and-interfacing-with-user-space/
 
+The Linux VFS
+	https://www.win.tue.nl/~aeb/linux/lk/lk-8.html
+	
 --> erasure coding
 ========================================
 Replication and Erasure Coding Explained
 	https://www.caringo.com/wp-content/themes/bootstrap/downloads/whitepapers/caringo_whitepaper_replication_and_erasure_coding.pdf
+
+James Plank Slides
+	http://web.eecs.utk.edu/~plank/plank/papers/2013-02-11-FAST-Tutorial.pdf
+	
 
 --> search queries
 ========================================
 working with vfs free space blocks linux kernel
 use a kernel module to write to a file
 kernel module that interacts with /proc
+cylinder group vs block group
 
 --> misc sources
 ========================================
@@ -60,12 +68,10 @@ coreutils source tree
 Driving Me Nuts - Things You Never Should Do in the Kernel
 	https://www.linuxjournal.com/article/8110
 
-sysfs
-	https://superuser.com/questions/794198/directory-sys-in-linux
-	https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt
-
 linux drivers
 	https://sysplay.github.io/books/LinuxDrivers/book/Content/Part18.html
+	https://www.safaribooksonline.com/library/view/linux-device-drivers/0596000081/ch03s02.html
+	https://lwn.net/Kernel/LDD3/
 
 module examples
 	http://www.cs.fsu.edu/~cop4610t/assignments.html
@@ -74,6 +80,23 @@ fat fs spec
 	https://technet.microsoft.com/en-us/library/cc750354.aspx
 	https://stackoverflow.com/questions/11928982/what-is-the-difference-between-vfat-and-fat32-file-systems
 
+file systems
+	http://teaching.idallen.com/cst8207/13w/notes/450_file_system.html
+	https://courses.cs.washington.edu/courses/cse451/15wi/sections/section8.pdf
+
+forum
+	https://stackoverflow.com/questions/42954020/marking-loadable-kernel-module-as-in-tree
+	https://www.quora.com/Why-does-sys-kernel-mean-when-a-directory-is-not-created-with-objects
+	
+tainted kernel
+	https://www.kernel.org/doc/html/v4.15/admin-guide/tainted-kernels.html
+
+ibm fs
+	https://www.ibm.com/developerworks/library/l-linux-filesystem/index.html
+	
+free space managment
+	https://www.youtube.com/watch?v=DWG6tO2EbjI
+	
 --> key files for fat32 block allocation 
 ===========================================
 file.c
@@ -83,3 +106,33 @@ fatent.c
 	fat_count_free_clusters():649
 
 	
+--> ext2 structure
+===========================================
+FFS Cylinder
+	http://www.cse.unsw.edu.au/~cs9242/02/lectures/09-fs/node4.html
+	
+FFS-Cylinder/Block Group
+	http://pages.cs.wisc.edu/~remzi/OSTEP/file-ffs.pdf
+	
+Block Bitmap
+	http://www.nongnu.org/ext2-doc/ext2.html#BLOCK-BITMAP
+
+Linux File System
+	https://www.youtube.com/watch?v=PbkgiO0YLxc
+	
+--> sysfs
+===========================================
+sysfs.txt
+	https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt
+
+sysfs and kobjects
+	https://www.win.tue.nl/~aeb/linux/lk/lk-13.html
+
+sysfs overview
+	https://superuser.com/questions/794198/directory-sys-in-linux
+	https://opensourceforu.com/2015/05/talking-to-the-kernel-through-sysfs/
+	
+--> Block Devices
+===========================================
+Linux Block Device Architechture
+	https://yannik520.github.io/blkdevarch.html
